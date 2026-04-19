@@ -21,6 +21,7 @@ This is a **hybrid knowledge base** — topic-based canonical notes plus a cours
 | [`05-projects/`](./05-projects/) | Bigger end-to-end builds (portfolio pieces) |
 | [`06-cheat-sheets/`](./06-cheat-sheets/) | Quick reference sheets (CLI, ports, services) |
 | [`07-flashcards/`](./07-flashcards/) | Q&A decks for spaced repetition |
+| [`08-interview-prep/`](./08-interview-prep/) | **Growing Q&A bank for interview prep — updated after every topic** |
 | [`99-resources/`](./99-resources/) | Books, blogs, people to follow, useful links |
 
 **The rule:** course notes are raw and chronological. Fundamentals are distilled and canonical. Course notes *link into* fundamentals — they don't duplicate.
@@ -29,7 +30,9 @@ This is a **hybrid knowledge base** — topic-based canonical notes plus a cours
 
 ## 🎯 Current focus
 
-- [ ] **Now:** Azure Networking fundamentals (VNet, Subnets, NSG, ASG)
+- [x] Day 5 — VNet fundamentals
+- [x] Day 6 — Networking analogy (Firewall, App Gateway, DNS, VNet peering, VPN)
+- [ ] **Now:** Day 7 — TBD
 - [ ] **Next:** Hands-on lab — deploy a 3-tier app with VNet isolation
 - [ ] **Cert target:** AZ-900 by [set your date]
 
@@ -41,7 +44,7 @@ See [`02-courses/README.md`](./02-courses/README.md) for the full list with prog
 
 | Course | Platform | Progress |
 |---|---|---|
-| Azure Zero to Hero (Abhishek) | YouTube | 🔄 Day 5 / 25 |
+| Azure Zero to Hero (Abhishek) | YouTube | 🔄 Day 6 / 25 |
 
 ---
 
@@ -63,10 +66,12 @@ Legend: ⬜ Not started • 🔄 In progress • ✅ Passed
 ### Networking
 - [x] [Virtual Network (VNet) & Subnets](./01-fundamentals/networking/01-vnet-subnets.md)
 - [x] [Network Security Groups (NSG) & ASG](./01-fundamentals/networking/02-nsg-asg.md)
+- [x] [VNet Peering & VPN Gateway](./01-fundamentals/networking/05-vnet-peering-and-vpn.md)
+- [x] [Load balancing — App Gateway vs LB](./01-fundamentals/networking/09-load-balancing.md)
+- [x] [Azure Firewall](./01-fundamentals/networking/10-azure-firewall.md)
+- [x] [Azure DNS](./01-fundamentals/networking/11-azure-dns.md)
 - [ ] CIDR deep dive
-- [ ] VNet peering
-- [ ] VPN Gateway & ExpressRoute
-- [ ] Azure Firewall vs NSG
+- [ ] Private Endpoints & Service Endpoints
 
 ### Compute
 - [ ] Virtual Machines
