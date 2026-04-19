@@ -19,7 +19,8 @@ Abhishek explains concepts with real-world analogies (Nike vs Puma for VNets, fo
 | 3 | TBD | ⬜ | |
 | 4 | Virtual Machines (Jenkins demo) | ⬜ | |
 | 5 | Azure Virtual Network (VNet) | ✅ | [day-05-vnet.md](./day-05-vnet.md) |
-| 6–25 | TBD | ⬜ | |
+| 6 | Networking with Housing Society analogy | ✅ | [day-06-networking-analogy.md](./day-06-networking-analogy.md) |
+| 7–25 | TBD | ⬜ | |
 
 ## Key takeaways so far
 
