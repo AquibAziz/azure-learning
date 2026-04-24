@@ -2,8 +2,8 @@
 
 All Q&A from all topics, compiled as I progress through the series. Grows with each video.
 
-**Last updated:** 2026-04-19 (after Day 6)
-**Total questions:** 20
+**Last updated:** 2026-04-20 (after AZ-500 cross-VM communication lab)
+**Total questions:** 31
 
 Jump to topic: [Networking](#networking) | _Compute (pending)_ | _Storage (pending)_ | _Identity (pending)_
 
@@ -336,6 +336,221 @@ Users worldwide → Front Door (global) → App Gateway (per region) → VMs
 **Alternative:** Traffic Manager for DNS-based geo-routing (older, works at DNS level, less smart about HTTP).
 
 **Follow-up point:** Front Door is region-redundant by design; App Gateway is regional. Combining them gives global + regional HA.
+
+</details>
+
+---
+
+### Q21: Why does every Azure VM get two IP addresses?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+A VM needs to communicate in two directions:
+
+- **Private IP** — from the subnet's CIDR range, used for communication *within* the VNet (to other VMs, databases, internal load balancers). Never reachable from the internet.
+- **Public IP** — allocated from Azure's public IP pool, reachable from the internet. Used for admin access (SSH/RDP) and public-facing services.
+
+Not every VM needs a public IP — production workloads often have private IPs only, with access through load balancers, bastion hosts, or VPN/ExpressRoute.
+
+**Follow-up point:** Public IPs are billed as a separate resource. Deleting a VM without deleting its public IP leaves you paying for nothing.
+
+</details>
+
+---
+
+### Q22: In a subnet with CIDR `10.0.0.0/24`, why is the first usable IP `10.0.0.4` and not `10.0.0.1`?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+Azure reserves 5 IPs per subnet:
+- `.0` — network address
+- `.1` — default gateway
+- `.2` and `.3` — Azure DNS mapping
+- `.255` (last) — broadcast
+
+This leaves `.4` through `.254` for your resources — 251 usable IPs. Traditional networking only reserves 2 (network + broadcast), so this trips people up.
+
+</details>
+
+---
+
+### Q23: You installed nginx on an Azure VM. `curl localhost` works on the VM, but `http://<public-ip>` from your laptop browser times out. What's wrong?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+Almost certainly the **NSG is blocking inbound port 80**. By default, Azure's NSG allows SSH (port 22) but denies all other inbound traffic from the internet (via the `DenyAllInBound` rule at priority 65500). nginx is running fine, but traffic never reaches it.
+
+**Fix:** Add an inbound NSG rule — Allow TCP 80 from Internet, priority 100 (or any value below 65500).
+
+**Other things to rule out:**
+- OS-level firewall (ufw, iptables) — unlikely on default Ubuntu image but possible
+- nginx not actually listening on 0.0.0.0 (bound to localhost only)
+
+**Follow-up point:** Use Network Watcher's "IP Flow Verify" to confirm which rule is blocking.
+
+</details>
+
+---
+
+### Q24: Why does SSH work out-of-the-box on a new Azure Linux VM but HTTP doesn't?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+When you create a Linux VM, the deployment wizard **automatically adds an inbound NSG rule** allowing port 22 (SSH) from the internet. It does this so you can actually manage the VM after deployment.
+
+HTTP (port 80) isn't auto-allowed because not every VM is a web server. You can check a box during VM creation to pre-allow HTTP/HTTPS, or add the rule manually afterward.
+
+**Follow-up point:** For production, SSH shouldn't be open to the internet at all. Use Azure Bastion or a jump box in a restricted subnet.
+
+</details>
+
+---
+
+### Q25: When you delete a VM in Azure, what else should you delete?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+Deleting the VM alone does NOT delete its associated resources. You'll keep paying for:
+
+- **Public IP address** — still allocated, still billed
+- **OS disk and data disks** — managed disks persist
+- **Network Interface (NIC)** — cheap but adds clutter
+- **NSG** — if dedicated, may be abandoned
+
+**Best practice:** put each lab's resources in its own **Resource Group** and delete the whole group with `az group delete --name <rg> --yes --no-wait`. One command, everything gone, no orphans.
+
+**Follow-up point:** Newer Azure portal deployments offer "Delete VM with associated resources" — but don't rely on it; always verify with `az resource list -g <rg>`.
+
+</details>
+
+---
+
+### Q26: What's the difference between a static and a dynamic public IP, and when would you use each?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Lab
+
+<details><summary>Answer</summary>
+
+- **Dynamic** — IP is assigned when the VM starts; *can change* if the VM is stopped (deallocated) and restarted. Cheaper. Default for new VMs.
+- **Static** — IP is reserved for you and stays the same forever (until you delete it). Slightly more expensive.
+
+**Use static when:**
+- DNS records point to this IP
+- Firewall rules elsewhere whitelist this IP
+- You're handing out the IP to clients/partners
+- Certificates are bound to the IP
+
+**Use dynamic when:**
+- Lab/dev VMs where the IP doesn't need to persist
+- The IP is always wrapped behind a load balancer or DNS name
+
+**Follow-up point:** A better pattern than static IP is to front the VM with a **DNS name** — Azure gives you a free `*.cloudapp.azure.com` hostname, or you use Azure DNS with your own domain.
+
+</details>
+
+---
+
+### Q27: Two VMs in different subnets of the same VNet can ping each other by private IP without any NSG rules. Why?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 VM Communication Lab
+
+<details><summary>Answer</summary>
+
+Every NSG has a built-in default rule called **`AllowVnetInBound`** at priority 65000. It allows any traffic whose source is the `VirtualNetwork` service tag — which includes the entire VNet address space (plus peered VNets and VPN-connected on-prem).
+
+So by default, anything *inside* the VNet can talk to anything else *inside* the VNet. You only need custom NSG rules to **restrict** this internal traffic or to allow **external** traffic from the internet.
+
+**Follow-up point:** To enforce segmentation between subnets (e.g., web shouldn't directly hit DB), you add an explicit Deny rule with priority < 65000.
+
+</details>
+
+---
+
+### Q28: A VM's public IP is `20.197.45.172`. Its private IP is `10.0.0.4`. When writing an NSG rule to allow HTTP from your laptop, what IP should you put as the destination?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 VM Communication Lab
+
+<details><summary>Answer</summary>
+
+**The private IP (`10.0.0.4`).** The public IP is not actually on the VM — it's owned by Azure's edge. Azure performs NAT: when a packet arrives on the public IP, the destination is rewritten to the private IP *before* the NSG evaluates the packet.
+
+NSGs only ever see post-NAT packets, so destination rules must match the private IP.
+
+**Follow-up point:** This is why internal tools like `ip addr` on the VM only show the private IP — the OS has no awareness of the public IP.
+
+</details>
+
+---
+
+### Q29: Your app tier VM needs to call the web tier VM in a different subnet. Should it use the public or private IP?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 VM Communication Lab
+
+<details><summary>Answer</summary>
+
+**Private IP, always.** Reasons:
+
+- Traffic stays on Azure's internal backbone — faster, lower latency
+- No egress bandwidth charges for leaving Azure
+- Public IP traffic is subject to default-deny from internet sources (would be blocked anyway)
+- More secure — never exposes internal routes to the internet
+
+Public IPs are for traffic entering from outside Azure. Internal traffic is always private IPs.
+
+</details>
+
+---
+
+### Q30: What does the "My IP Address" source option in the NSG rule wizard actually do, and what's a gotcha?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 VM Communication Lab
+
+<details><summary>Answer</summary>
+
+It auto-detects the public IP of the client device you're configuring Azure from (your laptop/home network) and hardcodes that IP as the source.
+
+**Gotcha:** Most home ISPs give **dynamic public IPs** — they can change after modem restart or at the ISP's whim. If your IP changes, the rule stops working and you're locked out.
+
+**Better approaches for persistent admin access:**
+- **Azure Bastion** — browser-based RDP/SSH with no public IP exposure
+- **VPN / ExpressRoute** — VPN into the VNet; use private IPs from there
+- **Static IP from ISP** — some business plans offer this for a fee
+
+</details>
+
+---
+
+### Q31: What's the difference between Azure having one NSG per VM vs one NSG per subnet?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 VM Communication Lab
+
+<details><summary>Answer</summary>
+
+**Per VM (wizard default):**
+- Easy to get started
+- Rules apply to one VM only
+- Rapidly gets messy — 20 VMs = 20 NSGs to manage
+- Inconsistent security if you forget to update one
+
+**Per subnet (best practice):**
+- One NSG covers every resource in the subnet
+- Consistent security for workloads in the same tier
+- Scales naturally — add more VMs and they inherit the rules
+- Easier to audit and maintain
+
+**Real-world pattern:** Attach NSG at subnet level. Use NIC-level NSGs only for exceptions (e.g., a single jump box with special access).
+
+**Follow-up point:** If rules exist at both levels, traffic must pass both — double-filtering is a common source of bugs.
 
 </details>
 

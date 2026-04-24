@@ -9,6 +9,7 @@ My learning journal. One folder per course, with day-by-day/session-by-session n
 | Course | Platform | Instructor | Status | Folder |
 |---|---|---|---|---|
 | Azure Zero to Hero | YouTube | Abhishek Veeramalla | 🔄 In progress | [`youtube-abhishek-zero-to-hero`](./youtube-abhishek-zero-to-hero/) |
+| AZ-500 Security Certification | Udemy | Alan Rodrigues | 🔄 In progress | [`udemy-alan-rodrigues-az500`](./udemy-alan-rodrigues-az500/) |
 
 Legend: ⬜ Not started • 🔄 In progress • ✅ Completed • ⏸️ Paused
 

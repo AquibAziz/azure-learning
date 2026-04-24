@@ -32,8 +32,9 @@ This is a **hybrid knowledge base** — topic-based canonical notes plus a cours
 
 - [x] Day 5 — VNet fundamentals
 - [x] Day 6 — Networking analogy (Firewall, App Gateway, DNS, VNet peering, VPN)
-- [ ] **Now:** Day 7 — TBD
-- [ ] **Next:** Hands-on lab — deploy a 3-tier app with VNet isolation
+- [x] AZ-500 Lab — Host web server on VM (demonstrates NSG default-deny)
+- [ ] **Now:** AZ-500 — NSG deep dive (next Alan video)
+- [ ] **Next:** Complete Lab 03 hands-on
 - [ ] **Cert target:** AZ-900 by [set your date]
 
 ---
@@ -45,6 +46,7 @@ See [`02-courses/README.md`](./02-courses/README.md) for the full list with prog
 | Course | Platform | Progress |
 |---|---|---|
 | Azure Zero to Hero (Abhishek) | YouTube | 🔄 Day 6 / 25 |
+| AZ-500 Security (Alan Rodrigues) | Udemy | 🔄 In progress |
 
 ---
 
@@ -56,6 +58,7 @@ See [`02-courses/README.md`](./02-courses/README.md) for the full list with prog
 | AZ-104 Administrator | ⬜ Not started | TBD |
 | AZ-204 Developer | ⬜ Not started | TBD |
 | AZ-305 Architect | ⬜ Not started | TBD |
+| AZ-500 Security | ⬜ Learning labs (not testing yet) | After AZ-104 |
 
 Legend: ⬜ Not started • 🔄 In progress • ✅ Passed
 
@@ -70,6 +73,7 @@ Legend: ⬜ Not started • 🔄 In progress • ✅ Passed
 - [x] [Load balancing — App Gateway vs LB](./01-fundamentals/networking/09-load-balancing.md)
 - [x] [Azure Firewall](./01-fundamentals/networking/10-azure-firewall.md)
 - [x] [Azure DNS](./01-fundamentals/networking/11-azure-dns.md)
+- [x] [Public IPs and NAT](./01-fundamentals/networking/12-public-ip-and-nat.md)
 - [ ] CIDR deep dive
 - [ ] Private Endpoints & Service Endpoints
 

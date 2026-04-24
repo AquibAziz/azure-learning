@@ -2,8 +2,8 @@
 
 All networking interview questions, isolated for focused study. Same entries as in the master bank but filtered.
 
-**Total networking questions:** 20
-**Breakdown:** 🟢 10 beginner · 🟡 8 intermediate · 🔴 2 advanced
+**Total networking questions:** 31
+**Breakdown:** 🟢 15 beginner · 🟡 14 intermediate · 🔴 2 advanced
 
 ---
 
@@ -109,6 +109,56 @@ Yes — Azure auto-creates a default VNet, subnet, NSG, and public IP. Convenien
 
 ---
 
+### Q: Why does every Azure VM get two IP addresses?
+
+<details><summary>Answer</summary>
+
+**Private IP** for communication inside the VNet (other VMs, databases, internal LBs). **Public IP** for internet-facing access (SSH/RDP, public services). Not every VM needs a public IP — production workloads often have private IPs only.
+
+</details>
+
+---
+
+### Q: In a subnet `10.0.0.0/24`, why is the first usable IP `10.0.0.4`?
+
+<details><summary>Answer</summary>
+
+Azure reserves 5 IPs per subnet: `.0` (network), `.1` (gateway), `.2`/`.3` (DNS), and `.255` (broadcast). First usable = `.4`. This is different from traditional networking, which only reserves 2.
+
+</details>
+
+---
+
+### Q: You installed nginx, `curl localhost` works on the VM, but the browser can't reach the public IP. Why?
+
+<details><summary>Answer</summary>
+
+NSG is blocking inbound port 80. Default NSG has `DenyAllInBound` at priority 65500 and only an auto-allow for SSH (22). Add an inbound rule: Allow TCP 80 from Internet, priority 100.
+
+</details>
+
+---
+
+### Q: Why does SSH work on a new Linux VM but HTTP doesn't, out of the box?
+
+<details><summary>Answer</summary>
+
+Azure's VM wizard automatically adds an inbound NSG rule for port 22 so you can manage the VM. HTTP isn't auto-allowed because not every VM is a web server.
+
+</details>
+
+---
+
+### Q: Your app tier VM needs to call the web tier VM in a different subnet. Should it use the public or private IP?
+
+<details><summary>Answer</summary>
+
+**Private IP, always.** Stays on Azure's backbone (faster, no egress charges), no internet exposure, no NSG default-deny issues. Public IPs are only for traffic entering Azure from outside.
+
+</details>
+
+---
+
 ## Intermediate (🟡)
 
 ### Q: What's the difference between an NSG and an ASG?
@@ -194,6 +244,66 @@ Connects two Azure VNets via Microsoft's backbone — low latency, high bandwidt
 <details><summary>Answer</summary>
 
 Web Application Firewall — protects HTTP apps against OWASP Top 10 (SQLi, XSS, etc.). In Azure, WAF is a feature of **Application Gateway** (regional) or **Front Door** (global). Not standalone.
+
+</details>
+
+---
+
+### Q: When you delete a VM in Azure, what else should you delete?
+
+<details><summary>Answer</summary>
+
+VM deletion does NOT clean up: **Public IP** (still billed), **OS/data disks**, **NIC**, **NSG**. Best practice: put each lab in its own resource group and delete the whole group with `az group delete`.
+
+</details>
+
+---
+
+### Q: Static vs dynamic public IP — when to use each?
+
+<details><summary>Answer</summary>
+
+**Dynamic** — can change on stop/start; cheap; fine for lab VMs. **Static** — reserved, stable; use when DNS points to it, firewall allowlists it, or certs are bound to it. Even better: front the VM with a DNS name so IP changes don't matter.
+
+</details>
+
+---
+
+### Q: Two VMs in different subnets of the same VNet talk by private IP without any NSG rule. Why?
+
+<details><summary>Answer</summary>
+
+The default rule **`AllowVnetInBound`** at priority 65000 allows any source with the `VirtualNetwork` service tag. This covers the whole VNet (plus peered VNets and VPN on-prem). To restrict internal traffic, add explicit Deny rules with priority < 65000.
+
+</details>
+
+---
+
+### Q: A VM's public IP is 20.x.x.x, private is 10.0.0.4. When writing an NSG rule for HTTP from my laptop, what IP do I put as destination?
+
+<details><summary>Answer</summary>
+
+**The private IP (10.0.0.4).** Azure performs NAT at the edge — rewrites destination from public to private IP *before* the NSG evaluates the packet. NSGs only see post-NAT packets, so destination must match the private IP.
+
+</details>
+
+---
+
+### Q: What does "My IP Address" in the NSG source wizard do, and what's the catch?
+
+<details><summary>Answer</summary>
+
+Auto-detects your current home/office public IP. Catch: most home ISPs give **dynamic IPs** — your IP can change, and the rule stops working. For persistent access, use **Azure Bastion**, **VPN**, or a static business IP.
+
+</details>
+
+---
+
+### Q: Difference between one NSG per VM vs one NSG per subnet?
+
+<details><summary>Answer</summary>
+
+**Per VM** (wizard default): easy to start, messy to scale (20 VMs = 20 NSGs). **Per subnet** (best practice): one NSG governs all resources, consistent, scales naturally. Use NIC-level only for exceptions. If both exist, traffic must pass both.
 
 </details>
 

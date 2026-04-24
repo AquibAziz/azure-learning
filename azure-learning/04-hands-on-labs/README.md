@@ -10,7 +10,7 @@ Real things I built, broke, and fixed in Azure. Each lab folder has commands, sc
 |---|---|---|---|
 | 01 | [First VM](./lab-01-first-vm/) | VM, NSG, SSH | ⬜ |
 | 02 | [3-tier VNet with NSG + ASG](./lab-02-3tier-vnet/) | VNet, subnets, NSG, ASG | ⬜ |
-| 03 | [VNet peering across regions](./lab-03-vnet-peering/) | Peering, global VNet peering | ⬜ |
+| 03 | [Host web server on VM (AZ-500)](./lab-03-host-web-server/) | VM, nginx, NSG default-deny | 🔄 |
 
 Legend: ⬜ Not started • 🔄 In progress • ✅ Completed
 
