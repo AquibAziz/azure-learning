@@ -2,8 +2,8 @@
 
 All Q&A from all topics, compiled as I progress through the series. Grows with each video.
 
-**Last updated:** 2026-04-20 (after AZ-500 cross-VM communication lab)
-**Total questions:** 31
+**Last updated:** 2026-04-24 (after AZ-500 subnet-level NSG lab)
+**Total questions:** 36
 
 Jump to topic: [Networking](#networking) | _Compute (pending)_ | _Storage (pending)_ | _Identity (pending)_
 
@@ -551,6 +551,119 @@ It auto-detects the public IP of the client device you're configuring Azure from
 **Real-world pattern:** Attach NSG at subnet level. Use NIC-level NSGs only for exceptions (e.g., a single jump box with special access).
 
 **Follow-up point:** If rules exist at both levels, traffic must pass both — double-filtering is a common source of bugs.
+
+</details>
+
+---
+
+### Q32: Can an NSG be attached directly to a whole VNet? If not, how do you enforce VNet-wide network rules?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Subnet NSG Lab
+
+<details><summary>Answer</summary>
+
+**No** — NSGs can only be attached to a **subnet** or a **NIC**. There's no "VNet-level NSG."
+
+For VNet-wide control, use:
+- **Azure Firewall** — centralized stateful firewall for the whole VNet; supports FQDN filtering and threat intelligence
+- **UDRs + Azure Firewall** in a hub VNet — route all outbound/cross-subnet traffic through the firewall
+- **Azure Policy** — enforce NSG existence across all subnets via policy (governance, not traffic filtering)
+
+**Follow-up point:** If someone asks "how do I protect every subnet with one rule," the answer is Azure Firewall + hub-and-spoke, not a VNet-level NSG (which doesn't exist).
+
+</details>
+
+---
+
+### Q33: You're creating a new NSG manually (not via the VM wizard) and attaching it to a subnet. What's the one rule you must remember to add yourself?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Subnet NSG Lab
+
+<details><summary>Answer</summary>
+
+**An SSH allow rule (port 22 for Linux) or RDP (port 3389 for Windows).** The VM creation wizard silently adds this rule when it creates its own NSG. A manually created NSG has only the built-in default rules, which deny all inbound from the internet.
+
+If you attach a rule-less NSG to your subnet and detach the old per-VM NSGs, **you lose admin access to all VMs in the subnet**.
+
+**Safer migration order:**
+1. Create new NSG
+2. Add SSH + other required rules
+3. Attach to subnet
+4. Detach old NSGs
+
+**Follow-up point:** For production, SSH shouldn't be open to the internet at all — use Azure Bastion or a jump box.
+
+</details>
+
+---
+
+### Q34: An SSH NSG rule needs to allow access to 3 VMs across 2 subnets. What are the options for the destination IP field, and what's the trade-off?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Subnet NSG Lab
+
+<details><summary>Answer</summary>
+
+Three options, with different trade-offs:
+
+1. **VNet address space** (e.g., `10.0.0.0/16`) — broadest, easy to maintain. Allows SSH to ANY current or future VM in the VNet. Violates least privilege.
+
+2. **Comma-separated private IPs** (e.g., `10.0.0.4,10.0.0.5,10.0.1.4`) — most restrictive. Only those exact VMs. Breaks when VMs change.
+
+3. **Subnet CIDR** (e.g., `10.0.0.0/24,10.0.1.0/24`) — middle ground. Allows any VM in specified subnets.
+
+**Best real-world answer:** Use an **ASG** — tag the 3 admin-accessible VMs with an ASG, use ASG as the destination. Role-based, dynamic, clean.
+
+</details>
+
+---
+
+### Q35: When migrating from per-VM NSGs to one shared subnet NSG, what's the correct order of operations to avoid locking yourself out?
+
+**Topic:** networking | **Difficulty:** 🔴 Advanced | **Source:** AZ-500 Subnet NSG Lab
+
+<details><summary>Answer</summary>
+
+**Safe order:**
+1. Create the new NSG
+2. **Add all required rules FIRST** (especially SSH/RDP and any app-specific rules)
+3. Verify the rules by inspecting them
+4. Attach the new NSG to the subnet
+5. Test SSH access still works (both old and new NSGs are now in effect — traffic must pass both)
+6. Detach the old per-VM NSGs from the NICs
+7. Verify access still works with only the new NSG
+8. Delete the old orphaned NSGs
+
+**What NOT to do:**
+- Detach old NSGs first → now you have no protection at all during the window before you attach the new one
+- Attach rule-less new NSG and then detach old → new NSG's DenyAllInBound kills SSH
+
+**Follow-up point:** In production, test this flow in dev first. Use Azure Network Watcher's "Effective Security Rules" to verify what's actually applied at each step.
+
+</details>
+
+---
+
+### Q36: Can the same NSG be attached to multiple subnets? Should you do it?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Subnet NSG Lab
+
+<details><summary>Answer</summary>
+
+**Technically yes** — Azure lets you attach one NSG to as many subnets as you want.
+
+**Should you? Usually no.** Different tiers (web/app/db) typically have different security needs:
+- Web subnet: allow 80/443 from internet
+- App subnet: allow only from web subnet
+- DB subnet: allow only from app subnet
+
+Sharing one NSG across tiers means sharing one rule set — which defeats much of the purpose of having subnets in the first place.
+
+**When sharing is fine:**
+- Two subnets with genuinely identical security requirements
+- Non-production environments where simplicity > strict segmentation
+- Small-scale learning setups (like Alan's demo)
+
+**Follow-up point:** For production, prefer one NSG per subnet with distinct rule sets per tier.
 
 </details>
 

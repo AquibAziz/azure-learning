@@ -2,8 +2,8 @@
 
 All networking interview questions, isolated for focused study. Same entries as in the master bank but filtered.
 
-**Total networking questions:** 31
-**Breakdown:** 🟢 15 beginner · 🟡 14 intermediate · 🔴 2 advanced
+**Total networking questions:** 36
+**Breakdown:** 🟢 16 beginner · 🟡 17 intermediate · 🔴 3 advanced
 
 ---
 
@@ -159,6 +159,16 @@ Azure's VM wizard automatically adds an inbound NSG rule for port 22 so you can 
 
 ---
 
+### Q: Can one NSG be attached to multiple subnets?
+
+<details><summary>Answer</summary>
+
+Yes technically. Usually you shouldn't — different tiers (web/app/db) need different rules. Sharing one NSG across tiers defeats the point of having subnets. OK only for identical-security subnets or demos.
+
+</details>
+
+---
+
 ## Intermediate (🟡)
 
 ### Q: What's the difference between an NSG and an ASG?
@@ -309,7 +319,49 @@ Auto-detects your current home/office public IP. Catch: most home ISPs give **dy
 
 ---
 
+### Q: Can an NSG be attached to a whole VNet? If not, how do you enforce VNet-wide rules?
+
+<details><summary>Answer</summary>
+
+**No.** NSGs only attach to subnets or NICs. For VNet-wide control, use **Azure Firewall** (with UDRs if you need to force subnet traffic through it). Azure Policy can enforce that NSGs exist on every subnet but isn't a filter itself.
+
+</details>
+
+---
+
+### Q: You create an NSG manually and attach it to a subnet. What rule MUST you add yourself that the VM wizard would have added?
+
+<details><summary>Answer</summary>
+
+**The SSH rule (port 22)** — or RDP (3389) for Windows. Manually created NSGs only have default rules which deny internet inbound. If you detach old NSGs before adding SSH, you lock yourself out of every VM in the subnet.
+
+</details>
+
+---
+
+### Q: SSH rule needs to allow access to 3 VMs across 2 subnets. What destination options do you have?
+
+<details><summary>Answer</summary>
+
+Three options: (1) VNet CIDR `10.0.0.0/16` — broad, easy. (2) Comma-separated IPs — restrictive, brittle. (3) Subnet CIDRs — middle ground. **Best:** use an **ASG** to tag the 3 VMs and reference the ASG as destination — role-based and dynamic.
+
+</details>
+
+---
+
 ## Advanced (🔴)
+
+### Q: When migrating from per-VM NSGs to a shared subnet NSG, what's the correct order to avoid lock-out?
+
+<details><summary>Answer</summary>
+
+1. Create new NSG → 2. **Add SSH + all rules FIRST** → 3. Verify rules → 4. Attach to subnet (both old + new now active, must pass both) → 5. Test SSH still works → 6. Detach old NIC-level NSGs → 7. Verify → 8. Delete old NSGs.
+
+**What NOT to do:** detach old NSGs before attaching the new one (no protection), or attach a rule-less new NSG before detaching (new DenyAllInBound kills SSH).
+
+</details>
+
+---
 
 ### Q: When would you choose VPN Gateway over ExpressRoute?
 

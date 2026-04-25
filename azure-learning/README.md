@@ -32,9 +32,10 @@ This is a **hybrid knowledge base** — topic-based canonical notes plus a cours
 
 - [x] Day 5 — VNet fundamentals
 - [x] Day 6 — Networking analogy (Firewall, App Gateway, DNS, VNet peering, VPN)
-- [x] AZ-500 Lab — Host web server on VM (demonstrates NSG default-deny)
-- [ ] **Now:** AZ-500 — NSG deep dive (next Alan video)
-- [ ] **Next:** Complete Lab 03 hands-on
+- [x] AZ-500 — Host web server on VM (NSG default-deny)
+- [x] AZ-500 — Cross-VM communication (NAT + private IPs)
+- [x] AZ-500 — NSGs at the subnet layer
+- [ ] **Now:** AZ-500 — next chapter
 - [ ] **Cert target:** AZ-900 by [set your date]
 
 ---

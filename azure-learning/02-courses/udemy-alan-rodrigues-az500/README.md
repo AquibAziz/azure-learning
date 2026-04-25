@@ -22,6 +22,7 @@ AZ-500 sits above AZ-104 in Microsoft's cert path. Starting it this early is amb
 |---|---|---|---|
 | Networking fundamentals | Host a web server on a VM | ✅ | [lab-host-web-server.md](./lab-host-web-server.md) |
 | Networking fundamentals | Communication across VMs in a VNet | ✅ | [lab-vm-communication.md](./lab-vm-communication.md) |
+| Networking fundamentals | NSGs at the subnet layer | ✅ | [lab-subnet-level-nsg.md](./lab-subnet-level-nsg.md) |
 | _TBD_ | _TBD_ | ⬜ | |
 
 ## Key takeaways so far

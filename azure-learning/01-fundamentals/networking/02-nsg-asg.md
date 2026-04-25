@@ -86,6 +86,29 @@ VNet: 10.0.0.0/16
     └── NSG rule: Deny Internet, allow asg-business-logic only
 ```
 
+### Migrating from per-VM NSGs to subnet NSGs
+
+When you create VMs through the Azure portal wizard, each gets its own NSG — fine for 1–2 VMs, nightmare for 20+. The migration pattern:
+
+1. **Create a new standalone NSG** in the same region as the VMs
+2. **Add ALL rules first** including the SSH rule — manually created NSGs don't get the auto-SSH rule the wizard adds
+3. **Verify rules are correct** (e.g., source = your IP, destination = VM private IPs, ports 22 and 80/443)
+4. **Attach new NSG to the subnet(s)**
+5. **Detach old per-VM NSGs** from individual NICs
+
+**Lock-out risk:** if you skip step 2 (forget to add SSH) and then detach the old NSGs, you're locked out of your VMs. Always add rules *before* migrating.
+
+**Can you skip per-VM NSGs entirely on new deployments?** Yes — when creating VMs via CLI/ARM/Bicep, don't create a per-NIC NSG at all. Just attach the VM to a subnet that already has an NSG.
+
+### One NSG on multiple subnets vs separate NSGs per subnet
+
+You *can* attach the same NSG to multiple subnets — Azure allows it. But usually you shouldn't, because:
+
+- Different tiers (web/app/db) need different rules
+- Sharing rules across tiers reduces the security benefit of subnets in the first place
+
+Use a shared NSG only when truly every subnet has identical security requirements (rare in real workloads).
+
 ## Gotchas & exam tips
 
 - **Priority is evaluated low to high.** Rule 100 wins over rule 200. Once a match is found, processing stops.
