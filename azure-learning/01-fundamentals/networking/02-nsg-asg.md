@@ -13,7 +13,80 @@ An NSG is a set of allow/deny rules for inbound and outbound traffic.
 
 **Best practice:** Attach at subnet level for most rules. Use NIC-level only for genuine exceptions (e.g., one jump box with special SSH access).
 
-**Gotcha:** If both subnet-level and NIC-level NSGs exist, traffic must pass *both*. Inbound: subnet → NIC. Outbound: NIC → subnet. This double-filtering is a common source of "why is my traffic blocked?" mysteries.
+**Gotcha:** If both subnet-level and NIC-level NSGs exist, traffic must pass *both*. Inbound: subnet → NIC. Outbound: NIC → subnet. This double-filtering is a common source of "why is my traffic blocked?" mysteries. **See section below on dual-NSG evaluation for the full details.**
+
+## Dual NSG evaluation (subnet + NIC together)
+
+This is one of the most common sources of confusion and a classic AZ-500 interview question. Understanding it clearly will save you hours of debugging.
+
+### The rule
+
+> **When a VM has NSGs at both subnet and NIC level, traffic must be explicitly allowed by BOTH NSGs to pass. An allow at only one level = traffic is blocked.**
+
+### Why this happens
+
+NSGs default to deny. No matching rule = denied. When two NSGs are attached, each is evaluated independently — the packet must pass both gates.
+
+Azure does NOT:
+- Combine or merge the two rule sets
+- Pick the more permissive NSG
+- Use "OR" logic (allow in either = passes)
+
+Azure DOES:
+- Evaluate each NSG independently, in sequence
+- Require an explicit allow at EACH level
+
+### Evaluation order
+
+| Direction | Order |
+|---|---|
+| Inbound | Subnet NSG → NIC NSG |
+| Outbound | NIC NSG → Subnet NSG |
+
+Both NSGs must allow for traffic to pass either direction.
+
+### Example — why "I have an allow rule" isn't enough
+
+Setup:
+- Subnet NSG: allows HTTP (80) from Internet
+- NIC NSG: only has default rules (no custom HTTP allow)
+
+Browser request on port 80 arrives:
+- Subnet NSG: "HTTP matches my allow rule ✓"
+- NIC NSG: "No rule matches → DenyAllInBound (default, priority 65500) ✗"
+- Result: blocked
+
+To fix: add an HTTP allow rule to the NIC NSG too.
+
+### Why would you ever use both levels?
+
+**Defense in depth** — the real reason for dual NSGs in production:
+
+**Subnet NSG = baseline policy (security team)**
+- Broad denies (e.g., "no RDP from internet")
+- Baseline allows (e.g., "HTTPS for public-facing tier")
+
+**NIC NSG = VM-specific exceptions (app team)**
+- Custom ports needed by a specific VM
+- Special admin access for a jump box
+- Tighter restrictions than the subnet baseline
+
+This lets different teams own different layers. Even if the app team misconfigures a NIC NSG, the subnet NSG still enforces the baseline.
+
+### Debugging traffic that "should work"
+
+When you have dual NSGs and traffic is mysteriously blocked:
+
+1. Azure portal → VM → **Networking** → **Effective Security Rules**
+2. This shows the combined view of BOTH NSGs' rules
+3. Find the rule that's actually blocking (usually default deny at the NSG that lacks your rule)
+4. Add a matching allow rule to the missing NSG
+
+Alternative: **NSG Flow Logs** (requires Log Analytics) can show historical denied traffic for forensic analysis.
+
+### Simpler is better
+
+In real-world architectures, prefer ONE NSG level (usually subnet) over two. Dual NSGs are useful for defense in depth but add operational complexity. If you can express all your rules on a single NSG, do it.
 
 ### Rule components
 

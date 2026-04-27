@@ -2,8 +2,8 @@
 
 All networking interview questions, isolated for focused study. Same entries as in the master bank but filtered.
 
-**Total networking questions:** 36
-**Breakdown:** 🟢 16 beginner · 🟡 17 intermediate · 🔴 3 advanced
+**Total networking questions:** 41
+**Breakdown:** 🟢 16 beginner · 🟡 20 intermediate · 🔴 5 advanced
 
 ---
 
@@ -349,6 +349,36 @@ Three options: (1) VNet CIDR `10.0.0.0/16` — broad, easy. (2) Comma-separated 
 
 ---
 
+### Q: A VM has subnet NSG (HTTP allow) and NIC NSG (no HTTP rule). Can browser reach it on port 80?
+
+<details><summary>Answer</summary>
+
+**No.** With dual NSGs, BOTH must allow. Subnet passes, NIC has no HTTP rule so default `DenyAllInBound` blocks. Fix: add HTTP allow to NIC NSG too. Azure doesn't merge rule sets — each NSG independently must say yes.
+
+</details>
+
+---
+
+### Q: What's the NSG evaluation order for inbound vs outbound when both subnet and NIC NSGs exist?
+
+<details><summary>Answer</summary>
+
+**Inbound:** Subnet NSG → NIC NSG. **Outbound:** NIC NSG → Subnet NSG. Both must allow either direction.
+
+</details>
+
+---
+
+### Q: User says "my NSG allows port 443 but connection is blocked." Debug approach?
+
+<details><summary>Answer</summary>
+
+1. **Effective Security Rules** in portal — shows combined subnet+NIC view. 2. Check for dual NSGs (both must allow). 3. Priorities (deny may override allow). 4. Direction (inbound vs outbound). 5. Destination IP uses private (post-NAT), not public. 6. OS firewall. 7. Is the app actually listening? 8. **IP Flow Verify** in Network Watcher simulates the packet.
+
+</details>
+
+---
+
 ## Advanced (🔴)
 
 ### Q: When migrating from per-VM NSGs to a shared subnet NSG, what's the correct order to avoid lock-out?
@@ -358,6 +388,26 @@ Three options: (1) VNet CIDR `10.0.0.0/16` — broad, easy. (2) Comma-separated 
 1. Create new NSG → 2. **Add SSH + all rules FIRST** → 3. Verify rules → 4. Attach to subnet (both old + new now active, must pass both) → 5. Test SSH still works → 6. Detach old NIC-level NSGs → 7. Verify → 8. Delete old NSGs.
 
 **What NOT to do:** detach old NSGs before attaching the new one (no protection), or attach a rule-less new NSG before detaching (new DenyAllInBound kills SSH).
+
+</details>
+
+---
+
+### Q: Why would you deliberately use NSGs at both subnet AND NIC level?
+
+<details><summary>Answer</summary>
+
+**Defense in depth + team separation of concerns.** Subnet NSG = baseline security policy (security team's broad rules). NIC NSG = VM-specific exceptions (app team's special needs). Lets teams own different layers safely — app team misconfigures NIC NSG, subnet NSG still enforces the baseline.
+
+</details>
+
+---
+
+### Q: Matching allow rules in both NSGs, plus a lower-priority deny in just the NIC NSG. Traffic result?
+
+<details><summary>Answer</summary>
+
+**Depends on priorities within the NIC NSG.** Azure evaluates rules within each NSG standalone — lower priority number wins. If the deny priority < allow priority in the NIC NSG, deny wins at NIC level → blocked. Azure never compares priorities across NSGs.
 
 </details>
 

@@ -35,6 +35,7 @@ This is a **hybrid knowledge base** — topic-based canonical notes plus a cours
 - [x] AZ-500 — Host web server on VM (NSG default-deny)
 - [x] AZ-500 — Cross-VM communication (NAT + private IPs)
 - [x] AZ-500 — NSGs at the subnet layer
+- [x] AZ-500 — Dual NSG evaluation (subnet + NIC both active)
 - [ ] **Now:** AZ-500 — next chapter
 - [ ] **Cert target:** AZ-900 by [set your date]
 

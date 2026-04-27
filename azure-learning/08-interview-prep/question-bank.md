@@ -2,8 +2,8 @@
 
 All Q&A from all topics, compiled as I progress through the series. Grows with each video.
 
-**Last updated:** 2026-04-24 (after AZ-500 subnet-level NSG lab)
-**Total questions:** 36
+**Last updated:** 2026-04-24 (after AZ-500 dual NSG evaluation)
+**Total questions:** 41
 
 Jump to topic: [Networking](#networking) | _Compute (pending)_ | _Storage (pending)_ | _Identity (pending)_
 
@@ -664,6 +664,100 @@ Sharing one NSG across tiers means sharing one rule set — which defeats much o
 - Small-scale learning setups (like Alan's demo)
 
 **Follow-up point:** For production, prefer one NSG per subnet with distinct rule sets per tier.
+
+</details>
+
+---
+
+### Q37: A VM has an NSG on its subnet (with HTTP allow) and a separate NSG on its NIC (with no HTTP rule). Can the browser reach the VM on port 80?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Dual NSG Lab
+
+<details><summary>Answer</summary>
+
+**No.** When a VM has NSGs at BOTH subnet and NIC levels, traffic must be explicitly allowed by BOTH. The subnet NSG allows HTTP — passes gate 1. The NIC NSG has no HTTP rule, so the default `DenyAllInBound` (priority 65500) kicks in — gate 2 blocks it.
+
+Both NSGs are evaluated independently; Azure does not merge them or pick the more permissive. Each must say "yes" for traffic to pass.
+
+**Follow-up point:** To fix, add an HTTP allow rule to the NIC NSG too.
+
+</details>
+
+---
+
+### Q38: In what order does Azure evaluate NSGs at the subnet and NIC level for inbound vs outbound traffic?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Dual NSG Lab
+
+<details><summary>Answer</summary>
+
+**Inbound:** Subnet NSG → NIC NSG (external traffic enters the subnet first, then reaches the VM's NIC)
+
+**Outbound:** NIC NSG → Subnet NSG (VM's packet leaves the NIC first, then traverses the subnet)
+
+Either direction, both NSGs must allow for traffic to pass. A "deny" or missing rule at either level = blocked.
+
+</details>
+
+---
+
+### Q39: Why would you deliberately use NSGs at both subnet and NIC level instead of just one?
+
+**Topic:** networking | **Difficulty:** 🔴 Advanced | **Source:** AZ-500 Dual NSG Lab
+
+<details><summary>Answer</summary>
+
+**Defense in depth + organizational separation of concerns:**
+
+- **Subnet NSG = baseline security policy** (managed by security/platform team): broad denies like "no RDP from internet," baseline allows like "HTTPS open for web tier"
+- **NIC NSG = VM-specific exceptions** (managed by app team): a custom port a specific service needs, special admin access for a jump box
+
+This split lets teams own different layers without stepping on each other. Even if the app team misconfigures a NIC NSG, the subnet NSG still enforces the security team's baseline.
+
+**Trade-off:** Operational complexity. In most real workloads, one NSG level (usually subnet) is simpler and sufficient. Use dual only when team separation or baseline enforcement genuinely warrants it.
+
+</details>
+
+---
+
+### Q40: A user says "my NSG allows port 443 but the connection is blocked." What's your debugging approach?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Dual NSG Lab
+
+<details><summary>Answer</summary>
+
+Check in this order:
+
+1. **Effective Security Rules** (Azure portal → VM → Networking) — shows the combined view of both subnet and NIC NSGs with the rule that actually applied. This is the #1 debugging tool.
+2. **Is there a second NSG?** Dual NSG evaluation means an allow at one level isn't enough. Both must allow.
+3. **Priority check** — a lower-numbered deny rule may override your allow.
+4. **Direction** — inbound vs outbound rule? Wrong direction is a common mistake.
+5. **Source/Destination** — does the rule actually match the traffic's source IP? (Remember Azure does NAT — destination is the private IP post-translation.)
+6. **OS-level firewall** on the VM (iptables, Windows Firewall) — Azure doesn't see this.
+7. **The app itself** — is nginx actually listening? `ss -tlnp` on the VM.
+8. **NSG Flow Logs** — forensic view of denied traffic, needs Log Analytics enabled.
+
+**Follow-up point:** `Network Watcher → IP Flow Verify` simulates a packet and tells you exactly which rule would allow or deny it.
+
+</details>
+
+---
+
+### Q41: If I have matching allow rules in both my subnet NSG and NIC NSG, and a lower-priority deny rule in the NIC NSG only, does traffic pass?
+
+**Topic:** networking | **Difficulty:** 🔴 Advanced | **Source:** AZ-500 Dual NSG Lab
+
+<details><summary>Answer</summary>
+
+**Depends on priorities within the NIC NSG.** Rules are evaluated within each NSG by priority (lower number wins). If the deny rule has a lower priority number than the allow rule in the NIC NSG, the deny wins at the NIC level → traffic blocked.
+
+Azure never compares priorities across NSGs — each NSG is evaluated standalone. So:
+- Subnet NSG: evaluates its own rules, picks the winner
+- NIC NSG: evaluates its own rules, picks the winner
+- If both winners are "allow" → traffic passes
+- If either winner is "deny" → traffic blocked
+
+**Follow-up point:** This is why priority management matters within each NSG — a low-priority deny can override higher-priority allows if you get the numbers wrong.
 
 </details>
 
