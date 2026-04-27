@@ -2,8 +2,8 @@
 
 All networking interview questions, isolated for focused study. Same entries as in the master bank but filtered.
 
-**Total networking questions:** 41
-**Breakdown:** 🟢 16 beginner · 🟡 20 intermediate · 🔴 5 advanced
+**Total networking questions:** 44
+**Breakdown:** 🟢 18 beginner · 🟡 21 intermediate · 🔴 5 advanced
 
 ---
 
@@ -164,6 +164,26 @@ Azure's VM wizard automatically adds an inbound NSG rule for port 22 so you can 
 <details><summary>Answer</summary>
 
 Yes technically. Usually you shouldn't — different tiers (web/app/db) need different rules. Sharing one NSG across tiers defeats the point of having subnets. OK only for identical-security subnets or demos.
+
+</details>
+
+---
+
+### Q: During VM creation, selecting "None" for NSG — what does it do?
+
+<details><summary>Answer</summary>
+
+Tells the wizard to NOT auto-create a per-VM NSG on the NIC. The VM inherits the subnet NSG's rules. Avoids NSG sprawl (10 VMs = 10 extra NSGs otherwise). "None" does NOT mean no security — the subnet NSG still applies.
+
+</details>
+
+---
+
+### Q: You deploy a new VM into a subnet with an existing NSG. Does the VM automatically get protection?
+
+<details><summary>Answer</summary>
+
+**Yes** — subnet NSG rules apply to all resources in the subnet automatically, including new ones. But rules referencing specific IPs won't cover new VMs unless edited. Prefer rules written in terms of subnets, service tags, or ASGs.
 
 </details>
 
@@ -374,6 +394,16 @@ Three options: (1) VNet CIDR `10.0.0.0/16` — broad, easy. (2) Comma-separated 
 <details><summary>Answer</summary>
 
 1. **Effective Security Rules** in portal — shows combined subnet+NIC view. 2. Check for dual NSGs (both must allow). 3. Priorities (deny may override allow). 4. Direction (inbound vs outbound). 5. Destination IP uses private (post-NAT), not public. 6. OS firewall. 7. Is the app actually listening? 8. **IP Flow Verify** in Network Watcher simulates the packet.
+
+</details>
+
+---
+
+### Q: SSH rule's destination = 10.0.0.4 (just one VM). You add vm-02 at 10.0.0.5 and can't SSH in. Why, and what's the scalable fix?
+
+<details><summary>Answer</summary>
+
+Rule doesn't match 10.0.0.5 → default deny blocks. Quick fix: add the new IP to the list. **Scalable fix: ASG.** Tag all SSH-accessible VMs with an ASG, reference it as destination. New VMs just need the tag — rule applies automatically.
 
 </details>
 

@@ -53,8 +53,8 @@ Concise answer (2–5 lines).
 
 | Topic | Total questions | Beginner | Intermediate | Advanced |
 |---|---|---|---|---|
-| Networking | 41 | 16 | 20 | 5 |
+| Networking | 44 | 18 | 21 | 5 |
 | Compute | 0 | 0 | 0 | 0 |
 | Storage | 0 | 0 | 0 | 0 |
 | Identity | 0 | 0 | 0 | 0 |
-| **Total** | **41** | **16** | **20** | **5** |
+| **Total** | **44** | **18** | **21** | **5** |

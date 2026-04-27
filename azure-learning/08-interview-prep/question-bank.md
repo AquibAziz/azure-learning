@@ -2,8 +2,8 @@
 
 All Q&A from all topics, compiled as I progress through the series. Grows with each video.
 
-**Last updated:** 2026-04-24 (after AZ-500 dual NSG evaluation)
-**Total questions:** 41
+**Last updated:** 2026-04-24 (after AZ-500 subnet-only deployment pattern)
+**Total questions:** 44
 
 Jump to topic: [Networking](#networking) | _Compute (pending)_ | _Storage (pending)_ | _Identity (pending)_
 
@@ -758,6 +758,60 @@ Azure never compares priorities across NSGs — each NSG is evaluated standalone
 - If either winner is "deny" → traffic blocked
 
 **Follow-up point:** This is why priority management matters within each NSG — a low-priority deny can override higher-priority allows if you get the numbers wrong.
+
+</details>
+
+---
+
+### Q42: During VM creation, the networking step offers a "None" option for NSG. What does selecting "None" accomplish?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Second VM Lab
+
+<details><summary>Answer</summary>
+
+It tells the deployment wizard **not to create a per-VM NSG on the NIC**. Without "None," the wizard auto-creates a fresh NSG for every VM — leading to NSG sprawl (10 VMs = 10 NSGs).
+
+**When to use "None":** when the subnet already has an NSG that applies to all VMs in the tier. The new VM inherits the subnet's rules automatically — no per-VM configuration needed.
+
+**Not to be confused with "no security"** — the subnet NSG still applies. "None" only refers to the NIC level.
+
+**Follow-up point:** This is the production-grade deployment pattern — centralized security at the subnet level, zero per-VM NSG maintenance.
+
+</details>
+
+---
+
+### Q43: Your NSG rule allows SSH with destination IP = `10.0.0.4`. You deploy web-vm-02 at `10.0.0.5` and can't SSH in. Why, and what's the scalable fix?
+
+**Topic:** networking | **Difficulty:** 🟡 Intermediate | **Source:** AZ-500 Second VM Lab
+
+<details><summary>Answer</summary>
+
+**Why it failed:** the rule only matches destination `10.0.0.4`. The new VM's IP `10.0.0.5` doesn't match, so the rule doesn't apply → default `DenyAllInBound` (priority 65500) blocks it.
+
+**Quick fix:** add `10.0.0.5` to the destination list → `10.0.0.4,10.0.0.5`. Works, but doesn't scale.
+
+**Scalable fix:** Use an **ASG**. Tag all SSH-accessible VMs with `asg-web-servers`, reference the ASG as destination. Future VMs? Just tag them with the ASG — rule applies automatically, no edits needed.
+
+**Even better:** for production, don't expose SSH to the internet at all — use Azure Bastion or a jump box.
+
+</details>
+
+---
+
+### Q44: You deploy a new VM into a subnet that already has an NSG attached. Do you need to configure networking for this VM separately?
+
+**Topic:** networking | **Difficulty:** 🟢 Beginner | **Source:** AZ-500 Second VM Lab
+
+<details><summary>Answer</summary>
+
+**No** — the subnet NSG applies automatically to any new resource deployed into that subnet. The VM inherits all the subnet's rules without any extra config.
+
+**But note:** the rules themselves may need updates if they reference specific IPs. For example, a rule with destination = specific VM's private IP won't cover the new VM unless you edit it.
+
+**Best practice:** write rules in terms of **subnets**, **service tags**, or **ASGs** — not specific IPs. This way, the rules "just work" for new VMs without edits.
+
+**Follow-up point:** Combine this with "None" at NIC level during VM creation and you have a clean, maintainable deployment pattern.
 
 </details>
 
